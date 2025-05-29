@@ -1202,6 +1202,9 @@ impl Pane for MockPane {
     fn load_pane_name(&mut self) {
         unimplemented!()
     }
+    fn get_pane_name(&self) -> String {
+        unimplemented!()
+    }
     fn set_borderless(&mut self, _borderless: bool) {
         unimplemented!()
     }

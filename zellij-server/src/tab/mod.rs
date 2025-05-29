@@ -496,6 +496,7 @@ pub trait Pane {
     }
     fn store_pane_name(&mut self);
     fn load_pane_name(&mut self);
+    fn get_pane_name(&self) -> String;
     fn set_borderless(&mut self, borderless: bool);
     fn borderless(&self) -> bool;
     fn set_exclude_from_sync(&mut self, exclude_from_sync: bool);

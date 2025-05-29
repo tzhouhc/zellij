@@ -243,6 +243,8 @@ enum ActionName {
     MouseEvent = 86;
     TogglePaneInGroup = 87;
     ToggleGroupMarking = 88;
+    QueryTabName = 89;
+    QueryPaneName = 90;
 }
 
 message Position {

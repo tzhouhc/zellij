@@ -274,6 +274,8 @@ pub enum ScreenInstruction {
     PreviousSwapLayout(ClientId),
     NextSwapLayout(ClientId),
     QueryTabNames(ClientId),
+    QueryTabName(ClientId),
+    QueryPaneName(ClientId),
     NewTiledPluginPane(
         RunPluginOrAlias,
         Option<String>,
@@ -555,6 +557,8 @@ impl From<&ScreenInstruction> for ScreenContext {
             ScreenInstruction::PreviousSwapLayout(..) => ScreenContext::PreviousSwapLayout,
             ScreenInstruction::NextSwapLayout(..) => ScreenContext::NextSwapLayout,
             ScreenInstruction::QueryTabNames(..) => ScreenContext::QueryTabNames,
+            ScreenInstruction::QueryTabName(..) => ScreenContext::QueryTabName,
+            ScreenInstruction::QueryPaneName(..) => ScreenContext::QueryPaneName,
             ScreenInstruction::NewTiledPluginPane(..) => ScreenContext::NewTiledPluginPane,
             ScreenInstruction::NewFloatingPluginPane(..) => ScreenContext::NewFloatingPluginPane,
             ScreenInstruction::StartOrReloadPluginPane(..) => {
@@ -4295,6 +4299,48 @@ pub(crate) fn screen_thread_main(
                     .bus
                     .senders
                     .send_to_server(ServerInstruction::Log(tab_names, client_id))?;
+            },
+            ScreenInstruction::QueryTabName(client_id) => {
+                // Notes from a confused newb dev:
+                // Zellij CLI routed actions are *not* done within
+                // an existing client;
+                // instead, they belong to a freshly created client, so the
+                // client_id exists but is useless when it comes to finding
+                // the "active tab / pane". clientid - 1 or just 1 is also not
+                // guaranteed to work, but is reasonably functional since
+                // in practice multiple clients share the same logging
+                // endpoint?
+                // Ideally the right client is reused from route_thread_main,
+                // but that might involve some significant refactoring of the
+                // whole routing mechanism.
+                let adjusted_cid = client_id - 1;
+                match screen.get_active_tab(adjusted_cid) {
+                    Ok(active_tab) => {
+                        let tab_name = vec![active_tab.name.clone()];
+                        screen
+                            .bus
+                            .senders
+                            .send_to_server(ServerInstruction::Log(tab_name, client_id))?;
+                    },
+                    Err(e) => log::error!("Failed to get active tab: {:?}", e),
+                }
+            },
+            ScreenInstruction::QueryPaneName(client_id) => {
+                // See above for reasoning as to the -1.
+                let adjusted_cid = client_id - 1;
+                match screen.get_active_tab(adjusted_cid) {
+                    Ok(active_tab) => match active_tab.get_active_pane(adjusted_cid) {
+                        Some(active_pane) => {
+                            let pane_name = vec![active_pane.get_pane_name()];
+                            screen
+                                .bus
+                                .senders
+                                .send_to_server(ServerInstruction::Log(pane_name, client_id))?;
+                        },
+                        None => log::error!("Failed to get active pane."),
+                    },
+                    Err(e) => log::error!("Failed to get active tab: {:?}", e),
+                }
             },
             ScreenInstruction::NewTiledPluginPane(
                 run_plugin,

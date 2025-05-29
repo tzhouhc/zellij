@@ -626,7 +626,9 @@ impl Pane for TerminalPane {
             self.pane_name = self.prev_pane_name.clone()
         }
     }
-
+    fn get_pane_name(&self) -> String {
+        self.pane_name.clone()
+    }
     fn set_borderless(&mut self, borderless: bool) {
         self.borderless = borderless;
     }
